@@ -1,6 +1,7 @@
 package orielly
 
 import java.time.Year
+import java.util.Properties
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -41,16 +42,34 @@ object Practice {
      */
     readDFFromDatabase(spark)
 
+    /**
+     * Write the data of a Dataframe to a PostgreSQL Table.
+     */
+    writeToADBTable(spark)
+
     spark.close()
   }
 
-  def readDFFromDatabase(spark:SparkSession): Unit = {
+  def writeToADBTable(spark: SparkSession): Unit = {
+    println("************************************WRITE DATA FROM DF TO DATABASE***************************")
+    val df = getDataFrame(spark)
+    var connProps = new Properties();
+    connProps.put("user", "postgres")
+    connProps.put("password", "adept")
+    df.write.mode(SaveMode.Overwrite).jdbc(url = "jdbc:postgresql://localhost:5432/spark_db", table = "public.fake_friends", connProps)
+    println("Successfully wrote this df to the db")
+    df.show(5)
+    val count = df.count()
+    println(s"This df has $count rows.")
+  }
+
+  def readDFFromDatabase(spark: SparkSession): Unit = {
     println("************************************READ A DF FROM DATABASE**********************************")
     val df = spark.read.format("jdbc")
-      .option("url","jdbc:postgresql://localhost:5432/spark_db")
-      .option("user","postgres")
-      .option("password","adept")
-      .option("dbtable","public.spark_table")
+      .option("url", "jdbc:postgresql://localhost:5432/spark_db")
+      .option("user", "postgres")
+      .option("password", "adept")
+      .option("dbtable", "spark_table")
       .load()
 
     df.show(3);
